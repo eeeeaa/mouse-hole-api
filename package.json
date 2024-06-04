@@ -1,0 +1,48 @@
+{
+  "name": "mouse-hole-api",
+  "version": "0.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=16.17.1"
+  },
+  "directories": {
+    "test": "./test"
+  },
+  "scripts": {
+    "test": "jest",
+    "start": "node ./bin/www",
+    "devstart": "nodemon ./bin/www",
+    "devwatch": "nodemon --inspect ./bin/www",
+    "serverstart": "DEBUG=mouse-hole-api:* npm run devstart",
+    "serverwatch": "DEBUG=mouse-hole-api:* npm run devwatch"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "compression": "^1.7.4",
+    "connect-mongo": "^5.1.0",
+    "cookie-parser": "~1.4.4",
+    "cookie-session": "^2.1.0",
+    "cors": "^2.8.5",
+    "debug": "^4.3.4",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-async-handler": "^1.2.0",
+    "express-rate-limit": "^7.2.0",
+    "express-validator": "^7.0.1",
+    "helmet": "^7.1.0",
+    "http-errors": "^2.0.0",
+    "jest": "^29.7.0",
+    "jsonwebtoken": "^9.0.2",
+    "luxon": "^3.4.4",
+    "mongodb-memory-server": "^9.2.0",
+    "mongoose": "^8.2.1",
+    "morgan": "^1.10.0",
+    "passport": "^0.7.0",
+    "passport-github2": "^0.1.12",
+    "passport-local": "^1.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0",
+    "supertest": "^7.0.0"
+  }
+}
