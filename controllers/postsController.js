@@ -39,6 +39,11 @@ exports.posts_get_one = [
 
 exports.posts_post = [
   verifyAuth,
+  body("title")
+    .trim()
+    .isLength({ min: 1 })
+    .withMessage("post must not be empty")
+    .escape(),
   body("content")
     .trim()
     .isLength({ min: 1 })
@@ -49,16 +54,58 @@ exports.posts_post = [
   asyncHandler(async (req, res, next) => {
     const post = new Post({
       author: req.user._id,
+      title: req.body.title,
       content: req.body.content,
       images: req.body.images,
+    });
+
+    await post.save();
+
+    res.json({
+      post: post,
     });
   }),
 ];
 
 exports.posts_put = [
   verifyAuth,
+  body("content")
+    .optional({ values: "falsy" })
+    .trim()
+    .isLength({ min: 1 })
+    .withMessage("post must not be empty")
+    .escape(),
+  body("content")
+    .optional({ values: "falsy" })
+    .trim()
+    .isLength({ min: 1 })
+    .withMessage("post must not be empty")
+    .escape(),
+  body("images").optional({ values: "falsy" }).isArray({ min: 1 }),
+  validationErrorHandler,
   asyncHandler(async (req, res, next) => {
-    res.send("NOT IMPLEMENTED: put post");
+    const existPost = await Post.findById(req.params.id).exec();
+    if (existPost === null) {
+      const err = new Error("Post does not exist, can't delete");
+      err.status = 404;
+      return next(err);
+    }
+
+    const post = new Post({
+      _id: req.params.id,
+      author: req.user._id,
+      title: req.body.title,
+      content: req.body.content,
+      images: req.body.images,
+    });
+
+    const updatedPost = new Post.findByIdAndUpdate(req.params.id, post, {
+      new: true,
+    });
+
+    res.json({
+      updatedPost,
+    });
   }),
 ];
 
