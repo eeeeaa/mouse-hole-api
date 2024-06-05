@@ -86,7 +86,7 @@ exports.posts_put = [
   asyncHandler(async (req, res, next) => {
     const existPost = await Post.findById(req.params.id).exec();
     if (existPost === null) {
-      const err = new Error("Post does not exist, can't delete");
+      const err = new Error("Post does not exist");
       err.status = 404;
       return next(err);
     }
