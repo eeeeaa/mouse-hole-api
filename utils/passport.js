@@ -1,5 +1,6 @@
 const passport = require("passport");
 const GitHubStrategy = require("passport-github2").Strategy;
+const CustomStrategy = require("passport-custom").Strategy;
 const User = require("../models/user");
 
 require("dotenv").config();
@@ -45,4 +46,25 @@ passport.use(
       }
     }
   )
+);
+
+passport.use(
+  new CustomStrategy(async function (req, done) {
+    try {
+      const user = await User.findOne({ github_id: "-1" });
+      if (!user) {
+        const newUser = new User({
+          username: "example",
+          display_name: "example",
+          github_id: "-1",
+        });
+        await newUser.save();
+        return done(null, newUser);
+      }
+
+      return done(null, user);
+    } catch (err) {
+      return done(err);
+    }
+  })
 );

@@ -5,7 +5,7 @@ const commentRouter = require("./comments");
 
 const post_controller = require("../controllers/postsController");
 
-router.use("/comments", commentRouter);
+router.use("/:id/comments", commentRouter);
 
 router.get("/", post_controller.posts_get);
 router.get("/:id", post_controller.posts_get_one);

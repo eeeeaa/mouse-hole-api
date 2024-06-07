@@ -73,12 +73,12 @@ app.use(
       mongoUrl: connectionString,
       collectionName: "sessions",
     }),
-    name: "github-auth-session",
     secret: process.env.SECRET,
-    resave: false,
-    saveUninitialized: false,
+    resave: true,
+    saveUninitialized: true,
     cookie: {
       maxAge: 1000 * 60 * 60 * 24, //expire in one day
+      secure: process.env.NODE_ENV !== "production" ? false : true,
     },
   })
 );
