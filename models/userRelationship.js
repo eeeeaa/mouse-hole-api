@@ -6,7 +6,7 @@ const UserRelationshipSchema = new Schema({
   user_id_second: { type: Schema.Types.ObjectId, ref: "User", required: true },
   relation_type: {
     type: String,
-    enum: ["Follow", "Block"],
+    enum: ["Follow"],
     default: "Follow",
   },
 });

@@ -4,7 +4,7 @@ const {
   validationErrorHandler,
   validIdErrorHandler,
 } = require("../handler/validationErrorHandler");
-const { verifyAuth, validIdErrorHandler } = require("../handler/authHandler");
+const { verifyAuth } = require("../handler/authHandler");
 const mongoose = require("mongoose");
 
 const User = require("../models/user");
@@ -41,46 +41,113 @@ async function fetchFollowing(user, relationType) {
   });
 }
 
-async function createRelationship(firstUser, secondUser, relationType) {
-  const relationship = new UserRelationship({
-    user_id_first: firstUser,
-    user_id_second: secondUser,
-    relation_type: relationType,
-  });
+//---logged in user---
 
-  await relationship.save();
-  return relationship;
-}
+exports.get_my_followers = [
+  verifyAuth,
+  asyncHandler(async (req, res, next) => {
+    //get all users that follows this user
+    const allFollowersOfUser = await fetchFollowers(req.user._id, "Follow");
 
-async function updateRelationship(firstUser, secondUser, relationTypeToBe) {
-  const existRelationship = await UserRelationship.find({
-    user_id_first: firstUser,
-    user_id_second: secondUser,
-  }).exec();
-
-  if (existRelationship === null) {
-    return null;
-  }
-
-  if (existRelationship.relation_type === relationTypeToBe) {
-    return existRelationship;
-  } else {
-    const userRelationship = new UserRelationship({
-      _id: existRelationship._id,
-      user_id_first: firstUser,
-      user_id_second: secondUser,
-      relation_type: relationTypeToBe,
+    res.json({
+      users: allFollowersOfUser,
     });
-    const updatedRelationship = await UserRelationship.findByIdAndUpdate(
-      existRelationship._id,
-      userRelationship,
-      { new: true }
-    );
-    return updatedRelationship;
-  }
-}
+  }),
+];
 
-//--User routes--
+exports.get_my_followings = [
+  verifyAuth,
+  asyncHandler(async (req, res, next) => {
+    //get all users that this user is following
+    const allFollowingsOfUser = await fetchFollowing(req.user._id, "Follow");
+
+    res.json({
+      users: allFollowingsOfUser,
+    });
+  }),
+];
+
+exports.get_my_follow_status = [
+  verifyAuth,
+  validIdErrorHandler,
+  asyncHandler(async (req, res, next) => {
+    //check if logged in user follows this user
+    const relationship = await UserRelationship.find({
+      user_id_first: req.user._id,
+      user_id_second: req.params.id,
+      relation_type: "Follow",
+    }).exec();
+
+    //just returns null if no relationship
+    res.json({
+      user_relationship: relationship,
+    });
+  }),
+];
+
+exports.follow_user = [
+  verifyAuth,
+  validIdErrorHandler,
+  asyncHandler(async (req, res, next) => {
+    //follow user
+    //if relationship already exist -> return that relationship
+    //if relationship doesn't exist -> create new relationship
+
+    const existRelationship = await UserRelationship.find({
+      user_id_first: req.user.id,
+      user_id_second: req.params.id,
+      relation_type: "Follow",
+    });
+
+    if (existRelationship) {
+      return res.json({
+        user_relationship: existRelationship,
+      });
+    }
+
+    const relationship = new UserRelationship({
+      user_id_first: req.user.id,
+      user_id_second: req.params.id,
+      relation_type: "Follow",
+    });
+
+    await relationship.save();
+
+    return res.json({
+      user_relationship: relationship,
+    });
+  }),
+];
+
+exports.unfollow_user = [
+  verifyAuth,
+  validIdErrorHandler,
+  asyncHandler(async (req, res, next) => {
+    //delete relationship
+    const existRelationship = await UserRelationship.find({
+      user_id_first: req.user.id,
+      user_id_second: req.params.id,
+      relation_type: "Follow",
+    });
+
+    if (existRelationship === null) {
+      const err = new Error("relationship not found");
+      err.status = 404;
+      return next(err);
+    }
+
+    const deletedRelationship = await UserRelationship.findByIdAndDelete(
+      existRelationship._id
+    );
+
+    return res.json({
+      user_relationship: deletedRelationship,
+    });
+  }),
+];
+
+//---any users---
+
 exports.get_user_followers = [
   verifyAuth,
   validIdErrorHandler,
@@ -94,140 +161,15 @@ exports.get_user_followers = [
   }),
 ];
 
-exports.get_user_blocks = [
-  verifyAuth,
-  validIdErrorHandler,
-  asyncHandler(async (req, res, next) => {
-    //get all users that blocks this user
-    const allFollowersOfUser = await fetchFollowers(req.params.id, "Block");
-
-    res.json({
-      users: allFollowersOfUser,
-    });
-  }),
-];
-
 exports.get_user_followings = [
   verifyAuth,
   validIdErrorHandler,
   asyncHandler(async (req, res, next) => {
     //get all users that this user is following
-    const allFollowersOfUser = await fetchFollowing(req.params.id, "Follow");
+    const allFollowingsOfUser = await fetchFollowing(req.params.id, "Follow");
 
     res.json({
-      users: allFollowersOfUser,
-    });
-  }),
-];
-
-exports.get_user_blockings = [
-  verifyAuth,
-  validIdErrorHandler,
-  asyncHandler(async (req, res, next) => {
-    //get all users that this user is blocking
-    const allFollowersOfUser = await fetchFollowing(req.params.id, "Block");
-
-    res.json({
-      users: allFollowersOfUser,
-    });
-  }),
-];
-
-exports.follow_user = [
-  verifyAuth,
-  validIdErrorHandler,
-  body("user_id_to_follow")
-    .custom((value) => {
-      return mongoose.Types.ObjectId.isValid(value);
-    })
-    .withMessage("invalid user id"),
-  validationErrorHandler,
-  asyncHandler(async (req, res, next) => {
-    const existRelationship = await UserRelationship.find({
-      user_id_first: firstUser,
-      user_id_second: secondUser,
-    }).exec();
-
-    if (existRelationship !== null) {
-      const err = new Error("user already exist");
-      err.status = 404;
-      return next(err);
-    }
-
-    const relationship = await createRelationship(
-      req.params.id,
-      req.body.user_id_to_follow,
-      "Follow"
-    );
-
-    res.json({
-      user_relationship: relationship,
-    });
-  }),
-];
-
-exports.block_user = [
-  verifyAuth,
-  validIdErrorHandler,
-  body("user_id_to_block")
-    .custom((value) => {
-      return mongoose.Types.ObjectId.isValid(value);
-    })
-    .withMessage("invalid user id"),
-  validationErrorHandler,
-  asyncHandler(async (req, res, next) => {
-    const existRelationship = await UserRelationship.find({
-      user_id_first: firstUser,
-      user_id_second: secondUser,
-    }).exec();
-
-    if (existRelationship !== null) {
-      const err = new Error("user already exist");
-      err.status = 404;
-      return next(err);
-    }
-
-    const relationship = await createRelationship(
-      req.params.id,
-      req.body.user_id_to_block,
-      "Block"
-    );
-
-    res.json({
-      user_relationship: relationship,
-    });
-  }),
-];
-
-exports.user_relationship_update = [
-  verifyAuth,
-  validIdErrorHandler,
-  body("user_id_to_follow")
-    .custom((value) => {
-      return mongoose.Types.ObjectId.isValid(value);
-    })
-    .withMessage("invalid user id"),
-  body("relation_type")
-    .custom((value) => {
-      return value === "Follow" || value === "Block";
-    })
-    .withMessage("invalid relationship type"),
-  validationErrorHandler,
-  asyncHandler(async (req, res, next) => {
-    const relationship = await updateRelationship(
-      req.params.id,
-      req.body.user_id_to_follow,
-      req.body.relation_type
-    );
-
-    if (relationship === null) {
-      const err = new Error("relationship not found");
-      err.status = 404;
-      return next(err);
-    }
-
-    return res.json({
-      user_relationship: relationship,
+      users: allFollowingsOfUser,
     });
   }),
 ];
