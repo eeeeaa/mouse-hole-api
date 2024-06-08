@@ -94,6 +94,7 @@ exports.comments_put = [
     .isLength({ min: 1 })
     .withMessage("message must not be empty")
     .escape(),
+  body("like_count").optional({ values: "falsy" }).isNumeric({ min: 0 }),
   validationErrorHandler,
   asyncHandler(async (req, res, next) => {
     const [existPost, existComment] = await Promise.all([
@@ -111,6 +112,7 @@ exports.comments_put = [
       _id: req.params.commentId,
       message: req.body.message,
       updated_at: Date.now(),
+      like_count: req.body.like_count,
     };
 
     const updatedComment = await Comment.findByIdAndUpdate(

@@ -82,6 +82,7 @@ exports.posts_put = [
     .withMessage("post must not be empty")
     .escape(),
   body("images").optional({ values: "falsy" }).isArray({ min: 1 }),
+  body("like_count").optional({ values: "falsy" }).isNumeric({ min: 0 }),
   validationErrorHandler,
   asyncHandler(async (req, res, next) => {
     const existPost = await Post.findById(req.params.id).exec();
@@ -91,13 +92,15 @@ exports.posts_put = [
       return next(err);
     }
 
-    const post = new Post({
+    const post = {
       _id: req.params.id,
       author: req.user._id,
       title: req.body.title,
       content: req.body.content,
       images: req.body.images,
-    });
+      updated_at: Date.now(),
+      like_count: req.body.like_count,
+    };
 
     const updatedPost = new Post.findByIdAndUpdate(req.params.id, post, {
       new: true,
