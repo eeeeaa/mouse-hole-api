@@ -1,9 +1,5 @@
 const asyncHandler = require("express-async-handler");
-const { body } = require("express-validator");
-const {
-  validationErrorHandler,
-  validIdErrorHandler,
-} = require("../handler/validationErrorHandler");
+const { validIdErrorHandler } = require("../handler/validationErrorHandler");
 const { verifyAuth } = require("../handler/authHandler");
 
 const User = require("../models/user");

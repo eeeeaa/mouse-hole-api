@@ -1,36 +1,10 @@
 const express = require("express");
-const passport = require("passport");
 const router = express.Router();
 
-router.get("/error", (req, res) =>
-  res.status(500).json({ message: "login failed" })
-);
-router.get(
-  "/github",
-  passport.authenticate("github", { scope: ["user:email"] })
-);
-router.get(
-  "/github/callback",
-  passport.authenticate("github", { failureRedirect: "/auth/error" }),
-  function (req, res) {
-    res.redirect("/");
-  }
-);
-router.get(
-  "/guest",
-  passport.authenticate("custom", { failureRedirect: "/auth/error" }),
-  function (req, res) {
-    res.redirect("/");
-  }
-);
+const auth_controller = require("../controllers/authController");
 
-router.get("/logout", function (req, res) {
-  req.logout(function (err) {
-    if (err) {
-      return next(err);
-    }
-    res.redirect("/");
-  });
-});
+router.post("/login", auth_controller.login_post);
+
+router.post("/signup", auth_controller.signup_post);
 
 module.exports = router;
