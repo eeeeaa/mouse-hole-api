@@ -1,11 +1,18 @@
 const asyncHandler = require("express-async-handler");
-const { validIdErrorHandler } = require("../handler/validationErrorHandler");
+const { body } = require("express-validator");
+const {
+  validIdErrorHandler,
+  validationErrorHandler,
+} = require("../handler/validationErrorHandler");
 const { verifyAuth } = require("../handler/authHandler");
 
 const User = require("../models/user");
 const Comment = require("../models/comment");
 const Post = require("../models/post");
 const UserRelationship = require("../models/userRelationship");
+const cloudinaryUtils = require("../utils/cloudinaryUtils");
+
+const upload = require("../utils/multer");
 
 exports.users_get = [
   verifyAuth,
@@ -39,14 +46,51 @@ exports.users_get_one = [
 exports.users_get_self = [
   verifyAuth,
   asyncHandler(async (req, res, next) => {
-    const user = await User.findById(req.user.id).exec();
-    if (user === null) {
-      const err = new Error("user not found");
+    res.json({
+      user: req.user,
+    });
+  }),
+];
+
+exports.users_put = [
+  verifyAuth,
+  validIdErrorHandler,
+  body("display_name")
+    .optional({ values: "falsy" })
+    .trim()
+    .isLength({ min: 1 })
+    .withMessage("display name must not be empty")
+    .escape(),
+  validationErrorHandler,
+  upload.single("image"),
+  asyncHandler(async (req, res, next) => {
+    const existUser = await User.findById(req.params.id).exec();
+    if (existUser === null) {
+      const err = new Error("User does not exist, can't update");
       err.status = 404;
       return next(err);
     }
+
+    const user = {
+      display_name: req.body.display_name,
+    };
+
+    if (req.file) {
+      //upload new profile image
+      const result = await cloudinaryUtils.ProfileUpload(
+        req,
+        crypto.randomUUID(),
+        true
+      );
+      user.profile_public_id = result.public_id;
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(req.params.id, user, {
+      new: true,
+    });
+
     res.json({
-      user: user,
+      updatedUser,
     });
   }),
 ];
@@ -73,6 +117,10 @@ exports.users_delete = [
         ],
       }).exec(),
     ]);
+
+    if (existUser.profile_public_id) {
+      await cloudinaryUtils.ImageDelete(existUser.profile_public_id);
+    }
 
     res.json({
       deletedUser,

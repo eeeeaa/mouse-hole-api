@@ -5,10 +5,6 @@ const cookieParser = require("cookie-parser");
 const logger = require("morgan");
 const cors = require("cors");
 
-const MongoStore = require("connect-mongo");
-const session = require("cookie-session");
-const passport = require("passport");
-
 const indexRouter = require("./routes/index");
 const authRouter = require("./routes/auth");
 const usersRouter = require("./routes/users");
@@ -62,23 +58,6 @@ app.use(
   helmet.contentSecurityPolicy({
     directives: {
       "script-src": ["'self'", "code.jquery.com", "cdn.jsdelivr.net"],
-    },
-  })
-);
-
-//setup passport
-app.use(
-  session({
-    store: MongoStore.create({
-      mongoUrl: connectionString,
-      collectionName: "sessions",
-    }),
-    secret: process.env.SECRET,
-    resave: true,
-    saveUninitialized: true,
-    cookie: {
-      maxAge: 1000 * 60 * 60 * 24, //expire in one day
-      secure: process.env.NODE_ENV !== "production" ? false : true,
     },
   })
 );

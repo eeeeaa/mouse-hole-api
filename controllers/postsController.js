@@ -10,6 +10,9 @@ const User = require("../models/user");
 const Comment = require("../models/comment");
 const Post = require("../models/post");
 
+const upload = require("../utils/multer");
+const cloudinaryUtils = require("../utils/cloudinaryUtils");
+
 exports.posts_get = [
   verifyAuth,
   asyncHandler(async (req, res, next) => {
@@ -49,14 +52,28 @@ exports.posts_post = [
     .isLength({ min: 1 })
     .withMessage("post must not be empty")
     .escape(),
-  body("images").optional({ values: "falsy" }).isArray({ min: 1 }),
   validationErrorHandler,
+  upload.array("image", 5),
   asyncHandler(async (req, res, next) => {
+    const imgs = [];
+    if (req.files) {
+      //upload multiple images
+
+      req.files.forEach(async (file) => {
+        const result = await cloudinaryUtils.cloudinaryUtils.PostImageUpload(
+          file,
+          crypto.randomUUID(),
+          true
+        );
+
+        imgs.push(result.public_id);
+      });
+    }
     const post = new Post({
       author: req.user._id,
       title: req.body.title,
       content: req.body.content,
-      images: req.body.images,
+      images: imgs,
     });
 
     await post.save();
@@ -81,9 +98,9 @@ exports.posts_put = [
     .isLength({ min: 1 })
     .withMessage("post must not be empty")
     .escape(),
-  body("images").optional({ values: "falsy" }).isArray({ min: 1 }),
   body("like_count").optional({ values: "falsy" }).isNumeric({ min: 0 }),
   validationErrorHandler,
+  upload.array("image", 5),
   asyncHandler(async (req, res, next) => {
     const existPost = await Post.findById(req.params.id).exec();
     if (existPost === null) {
@@ -92,12 +109,34 @@ exports.posts_put = [
       return next(err);
     }
 
+    const imgs = [];
+    if (req.files) {
+      //upload multiple images
+
+      req.files.forEach(async (file) => {
+        const result = await cloudinaryUtils.cloudinaryUtils.PostImageUpload(
+          file,
+          crypto.randomUUID(),
+          true
+        );
+
+        imgs.push(result.public_id);
+      });
+
+      //delete old images
+      if (existPost.images) {
+        existPost.images.forEach(async (image) => {
+          await cloudinaryUtils.ImageDelete(image);
+        });
+      }
+    }
+
     const post = {
       _id: req.params.id,
       author: req.user._id,
       title: req.body.title,
       content: req.body.content,
-      images: req.body.images,
+      images: imgs,
       updated_at: Date.now(),
       like_count: req.body.like_count,
     };
@@ -127,6 +166,13 @@ exports.posts_delete = [
       Post.findByIdAndDelete(req.params.id),
       Comment.deleteMany({ post: req.params.id }).exec(),
     ]);
+
+    //delete old images
+    if (existPost.images) {
+      existPost.images.forEach(async (image) => {
+        await cloudinaryUtils.ImageDelete(image);
+      });
+    }
 
     req.json({
       deletedPost,
