@@ -45,12 +45,12 @@ exports.posts_post = [
   body("title")
     .trim()
     .isLength({ min: 1 })
-    .withMessage("post must not be empty")
+    .withMessage("post title must not be empty")
     .escape(),
   body("content")
     .trim()
     .isLength({ min: 1 })
-    .withMessage("post must not be empty")
+    .withMessage("post content must not be empty")
     .escape(),
   validationErrorHandler,
   upload.array("image", 5),
@@ -86,17 +86,17 @@ exports.posts_post = [
 
 exports.posts_put = [
   verifyAuth,
-  body("content")
+  body("title")
     .optional({ values: "falsy" })
     .trim()
     .isLength({ min: 1 })
-    .withMessage("post must not be empty")
+    .withMessage("post title must not be empty")
     .escape(),
   body("content")
     .optional({ values: "falsy" })
     .trim()
     .isLength({ min: 1 })
-    .withMessage("post must not be empty")
+    .withMessage("post content must not be empty")
     .escape(),
   body("like_count").optional({ values: "falsy" }).isNumeric({ min: 0 }),
   validationErrorHandler,
@@ -141,7 +141,7 @@ exports.posts_put = [
       like_count: req.body.like_count,
     };
 
-    const updatedPost = new Post.findByIdAndUpdate(req.params.id, post, {
+    const updatedPost = await Post.findByIdAndUpdate(req.params.id, post, {
       new: true,
     });
 
@@ -174,7 +174,7 @@ exports.posts_delete = [
       });
     }
 
-    req.json({
+    res.json({
       deletedPost,
     });
   }),

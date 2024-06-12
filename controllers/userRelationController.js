@@ -47,7 +47,7 @@ exports.get_my_followers = [
   verifyAuth,
   asyncHandler(async (req, res, next) => {
     //get all users that follows this user
-    const allFollowersOfUser = await fetchFollowers(req.user.id, "Follow");
+    const allFollowersOfUser = await fetchFollowers(req.user._id, "Follow");
 
     res.json({
       users: allFollowersOfUser,
@@ -59,7 +59,7 @@ exports.get_my_followings = [
   verifyAuth,
   asyncHandler(async (req, res, next) => {
     //get all users that this user is following
-    const allFollowingsOfUser = await fetchFollowing(req.user.id, "Follow");
+    const allFollowingsOfUser = await fetchFollowing(req.user._id, "Follow");
 
     res.json({
       users: allFollowingsOfUser,
@@ -73,7 +73,7 @@ exports.get_my_follow_status = [
   asyncHandler(async (req, res, next) => {
     //check if logged in user follows this user
     const relationship = await UserRelationship.findOne({
-      user_id_first: req.user.id,
+      user_id_first: req.user._id,
       user_id_second: req.params.id,
       relation_type: "Follow",
     }).exec();
@@ -94,7 +94,7 @@ exports.follow_user = [
     //if relationship doesn't exist -> create new relationship
 
     const existRelationship = await UserRelationship.findOne({
-      user_id_first: req.user.id,
+      user_id_first: req.user._id,
       user_id_second: req.params.id,
       relation_type: "Follow",
     });
@@ -106,7 +106,7 @@ exports.follow_user = [
     }
 
     const relationship = new UserRelationship({
-      user_id_first: req.user.id,
+      user_id_first: req.user._id,
       user_id_second: req.params.id,
       relation_type: "Follow",
     });
@@ -125,7 +125,7 @@ exports.unfollow_user = [
   asyncHandler(async (req, res, next) => {
     //delete relationship
     const existRelationship = await UserRelationship.findOne({
-      user_id_first: req.user.id,
+      user_id_first: req.user._id,
       user_id_second: req.params.id,
       relation_type: "Follow",
     });

@@ -77,7 +77,7 @@ exports.signup_post = [
       password: hash,
     });
 
-    user.save();
+    await user.save();
     res.json({
       user,
     });
