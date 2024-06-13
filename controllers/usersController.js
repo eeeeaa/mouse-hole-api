@@ -76,6 +76,9 @@ exports.users_put = [
     };
 
     if (req.file) {
+      if (user.profile_public_id) {
+        await cloudinaryUtils.ImageDelete(user.profile_public_id);
+      }
       //upload new profile image
       const result = await cloudinaryUtils.ProfileUpload(
         req,
@@ -83,6 +86,7 @@ exports.users_put = [
         true
       );
       user.profile_public_id = result.public_id;
+      user.profile_url = cloudinaryUtils.getImageUrl(result.public_id);
     }
 
     const updatedUser = await User.findByIdAndUpdate(req.params.id, user, {

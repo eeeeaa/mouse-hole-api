@@ -56,17 +56,19 @@ exports.posts_post = [
   upload.array("image", 5),
   asyncHandler(async (req, res, next) => {
     const imgs = [];
+    const urls = [];
     if (req.files) {
       //upload multiple images
 
       req.files.forEach(async (file) => {
-        const result = await cloudinaryUtils.cloudinaryUtils.PostImageUpload(
+        const result = await cloudinaryUtils.PostImageUpload(
           file,
           crypto.randomUUID(),
           true
         );
 
         imgs.push(result.public_id);
+        urls.push(cloudinaryUtils.getImageUrl(result.public_id));
       });
     }
     const post = new Post({
@@ -74,6 +76,7 @@ exports.posts_post = [
       title: req.body.title,
       content: req.body.content,
       images: imgs,
+      image_urls: urls,
     });
 
     await post.save();
@@ -110,25 +113,26 @@ exports.posts_put = [
     }
 
     const imgs = [];
+    const urls = [];
     if (req.files) {
-      //upload multiple images
-
-      req.files.forEach(async (file) => {
-        const result = await cloudinaryUtils.cloudinaryUtils.PostImageUpload(
-          file,
-          crypto.randomUUID(),
-          true
-        );
-
-        imgs.push(result.public_id);
-      });
-
       //delete old images
       if (existPost.images) {
         existPost.images.forEach(async (image) => {
           await cloudinaryUtils.ImageDelete(image);
         });
       }
+
+      //upload multiple images
+      req.files.forEach(async (file) => {
+        const result = await cloudinaryUtils.PostImageUpload(
+          file,
+          crypto.randomUUID(),
+          true
+        );
+
+        imgs.push(result.public_id);
+        urls.push(cloudinaryUtils.getImageUrl(result.public_id));
+      });
     }
 
     const post = {
@@ -137,6 +141,7 @@ exports.posts_put = [
       title: req.body.title,
       content: req.body.content,
       images: imgs,
+      urls: urls,
       updated_at: Date.now(),
       like_count: req.body.like_count,
     };
@@ -162,17 +167,17 @@ exports.posts_delete = [
       return next(err);
     }
 
-    const [deletedPost, comments] = await Promise.all([
-      Post.findByIdAndDelete(req.params.id),
-      Comment.deleteMany({ post: req.params.id }).exec(),
-    ]);
-
     //delete old images
     if (existPost.images) {
       existPost.images.forEach(async (image) => {
         await cloudinaryUtils.ImageDelete(image);
       });
     }
+
+    const [deletedPost, comments] = await Promise.all([
+      Post.findByIdAndDelete(req.params.id),
+      Comment.deleteMany({ post: req.params.id }).exec(),
+    ]);
 
     res.json({
       deletedPost,
