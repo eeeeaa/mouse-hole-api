@@ -18,28 +18,39 @@ async function fetchFollowers(user, relationType) {
     },
     "user_id_first"
   )
-    .populate("user_id_first")
+    .populate("user_id_first", "username display_name profile_url")
     .exec();
   return allFollowersOfUser.map((relation) => {
     return relation.user_id_first;
   });
 }
 
-async function fetchFollowing(user, relationType) {
-  const allFollowersOfUser = await UserRelationship.find(
-    {
-      user_id_first: user,
-      relation_type: relationType,
-    },
-    "user_id_second"
-  )
-    .populate("user_id_second")
-    .exec();
+exports.fetchFollowing = async (user, relationType, onlyId = false) => {
+  let allFollowingsOfUser = [];
+  if (onlyId) {
+    allFollowingsOfUser = await UserRelationship.find(
+      {
+        user_id_first: user,
+        relation_type: relationType,
+      },
+      "user_id_second"
+    ).exec();
+  } else {
+    allFollowingsOfUser = await UserRelationship.find(
+      {
+        user_id_first: user,
+        relation_type: relationType,
+      },
+      "user_id_second"
+    )
+      .populate("user_id_second", "username display_name profile_url")
+      .exec();
+  }
 
-  return allFollowersOfUser.map((relation) => {
+  return allFollowingsOfUser.map((relation) => {
     return relation.user_id_second;
   });
-}
+};
 
 //---logged in user---
 
@@ -59,7 +70,10 @@ exports.get_my_followings = [
   verifyAuth,
   asyncHandler(async (req, res, next) => {
     //get all users that this user is following
-    const allFollowingsOfUser = await fetchFollowing(req.user._id, "Follow");
+    const allFollowingsOfUser = await this.fetchFollowing(
+      req.user._id,
+      "Follow"
+    );
 
     res.json({
       users: allFollowingsOfUser,
@@ -166,7 +180,10 @@ exports.get_user_followings = [
   validIdErrorHandler,
   asyncHandler(async (req, res, next) => {
     //get all users that this user is following
-    const allFollowingsOfUser = await fetchFollowing(req.params.id, "Follow");
+    const allFollowingsOfUser = await this.fetchFollowing(
+      req.params.id,
+      "Follow"
+    );
 
     res.json({
       users: allFollowingsOfUser,

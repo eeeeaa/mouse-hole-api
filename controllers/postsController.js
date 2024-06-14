@@ -13,6 +13,8 @@ const Post = require("../models/post");
 const upload = require("../utils/multer");
 const cloudinaryUtils = require("../utils/cloudinaryUtils");
 
+const { fetchFollowing } = require("./userRelationController");
+
 exports.posts_get = [
   verifyAuth,
   asyncHandler(async (req, res, next) => {
@@ -20,6 +22,27 @@ exports.posts_get = [
 
     res.json({
       posts: allPosts,
+    });
+  }),
+];
+
+exports.posts_my_feed_get = [
+  verifyAuth,
+  asyncHandler(async (req, res, next) => {
+    const allFollowingsOfUser = await fetchFollowing(
+      req.user._id,
+      "Follow",
+      true
+    );
+
+    const feedIds = [...allFollowingsOfUser, req.user._id];
+
+    const myFeeds = await Post.find({ author: { $in: feedIds } })
+      .limit(req.query.limit)
+      .exec();
+
+    res.json({
+      posts: myFeeds,
     });
   }),
 ];

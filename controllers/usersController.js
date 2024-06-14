@@ -17,7 +17,7 @@ const upload = require("../utils/multer");
 exports.users_get = [
   verifyAuth,
   asyncHandler(async (req, res, next) => {
-    const allUsers = await User.find()
+    const allUsers = await User.find({}, "username display_name profile_url")
       .sort({ username: 1 })
       .limit(req.query.limit)
       .exec();
@@ -31,7 +31,10 @@ exports.users_get_one = [
   verifyAuth,
   validIdErrorHandler,
   asyncHandler(async (req, res, next) => {
-    const user = await User.findById(req.params.id).exec();
+    const user = await User.findById(
+      req.params.id,
+      "username display_name profile_url"
+    ).exec();
     if (user === null) {
       const err = new Error("user not found");
       err.status = 404;
@@ -47,7 +50,12 @@ exports.users_get_self = [
   verifyAuth,
   asyncHandler(async (req, res, next) => {
     res.json({
-      user: req.user,
+      user: {
+        _id: req.user._id,
+        username: req.user.username,
+        display_name: req.user.display_name,
+        profile_url: req.user.profile_url,
+      },
     });
   }),
 ];
@@ -94,7 +102,12 @@ exports.users_put = [
     });
 
     res.json({
-      updatedUser,
+      updatedUser: {
+        _id: updatedUser._id,
+        username: updatedUser.username,
+        display_name: updatedUser.display_name,
+        profile_url: updatedUser.profile_url,
+      },
     });
   }),
 ];
@@ -127,7 +140,12 @@ exports.users_delete = [
     }
 
     res.json({
-      deletedUser,
+      deletedUser: {
+        _id: deletedUser._id,
+        username: deletedUser.username,
+        display_name: deletedUser.display_name,
+        profile_url: deletedUser.profile_url,
+      },
     });
   }),
 ];

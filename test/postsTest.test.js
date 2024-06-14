@@ -12,25 +12,38 @@ const app = getMockExpressApp(posts);
 describe("posts route test", () => {
   let token = "";
   let userId = "";
+  let userB = "";
   let postId = "";
 
   beforeAll(async () => {
     console.log("starting server...");
     await initializeMongoServer();
 
-    const signupResponse = await request(app).post("/auth/signup").send({
+    const userAResponse = await request(app).post("/auth/signup").send({
       username: "admin",
       password: "admin",
       password_confirm: "admin",
     });
 
-    const response = await request(app).post("/auth/login").send({
+    const userBResponse = await request(app).post("/auth/signup").send({
+      username: "dummy2",
+      password: "dummy2",
+      password_confirm: "dummy2",
+    });
+
+    //login as user A
+    const loginResponse = await request(app).post("/auth/login").send({
       username: "admin",
       password: "admin",
     });
 
-    token = response.body.token;
-    userId = signupResponse.body.user._id;
+    await request(app)
+      .post(`/${userB}/follow-user`)
+      .set("Authorization", `Bearer ${loginResponse.body.token}`);
+
+    token = loginResponse.body.token;
+    userId = userAResponse.body.user._id;
+    userB = userBResponse.body.user._id;
   });
 
   afterAll(() => {
@@ -62,6 +75,18 @@ describe("posts route test", () => {
   test("get posts", (done) => {
     request(app)
       .get("/")
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err);
+        expect(res.body.posts.length).toBe(1);
+        return done();
+      });
+  });
+
+  test("get my feeds", (done) => {
+    request(app)
+      .get("/my-feed")
       .set("Authorization", `Bearer ${token}`)
       .expect(200)
       .end((err, res) => {

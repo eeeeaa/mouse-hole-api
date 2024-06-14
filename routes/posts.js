@@ -8,6 +8,7 @@ const post_controller = require("../controllers/postsController");
 router.use("/:id/comments", commentRouter);
 
 router.get("/", post_controller.posts_get);
+router.get("/my-feed", post_controller.posts_my_feed_get);
 router.get("/:id", post_controller.posts_get_one);
 
 router.post("/", post_controller.posts_post);
