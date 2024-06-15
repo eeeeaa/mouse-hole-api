@@ -18,6 +18,7 @@ router.get("/:id/followings", relation_controller.get_user_followings);
 router.get("/", user_controller.users_get);
 router.get("/my-profile", user_controller.users_get_self);
 router.get("/:id", user_controller.users_get_one);
+router.put("/:id", user_controller.users_put);
 
 router.delete("/:id", user_controller.users_delete);
 
