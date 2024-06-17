@@ -65,6 +65,7 @@ exports.posts_get_one = [
 
 exports.posts_post = [
   verifyAuth,
+  upload.array("image", 5),
   body("title")
     .trim()
     .isLength({ min: 1 })
@@ -76,7 +77,6 @@ exports.posts_post = [
     .withMessage("post content must not be empty")
     .escape(),
   validationErrorHandler,
-  upload.array("image", 5),
   asyncHandler(async (req, res, next) => {
     const imgs = [];
     const urls = [];

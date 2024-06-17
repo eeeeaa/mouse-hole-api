@@ -63,6 +63,7 @@ exports.users_get_self = [
 exports.users_put = [
   verifyAuth,
   validIdErrorHandler,
+  upload.single("image"),
   body("display_name")
     .optional({ values: "falsy" })
     .trim()
@@ -70,7 +71,6 @@ exports.users_put = [
     .withMessage("display name must not be empty")
     .escape(),
   validationErrorHandler,
-  upload.single("image"),
   asyncHandler(async (req, res, next) => {
     const existUser = await User.findById(req.params.id).exec();
     if (existUser === null) {
