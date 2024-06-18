@@ -84,8 +84,8 @@ exports.users_put = [
     };
 
     if (req.file) {
-      if (user.profile_public_id) {
-        await cloudinaryUtils.ImageDelete(user.profile_public_id);
+      if (existUser.profile_public_id) {
+        await cloudinaryUtils.ImageDelete(existUser.profile_public_id);
       }
       //upload new profile image
       const result = await cloudinaryUtils.ProfileUpload(

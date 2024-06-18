@@ -50,7 +50,5 @@ exports.getImageUrl = function (publicId, size = 64) {
 };
 
 exports.ImageDelete = async function (publicId) {
-  cloudinary.uploader.destroy(publicId, function (result) {
-    console.log(result);
-  });
+  await cloudinary.uploader.destroy(publicId, function (result) {});
 };

@@ -18,7 +18,10 @@ const { fetchFollowing } = require("./userRelationController");
 exports.posts_get = [
   verifyAuth,
   asyncHandler(async (req, res, next) => {
-    const allPosts = await Post.find().limit(req.query.limit).exec();
+    const allPosts = await Post.find()
+      .populate("author", "username display_name profile_url")
+      .limit(req.query.limit)
+      .exec();
 
     res.json({
       posts: allPosts,
@@ -38,6 +41,7 @@ exports.posts_my_feed_get = [
     const feedIds = [...allFollowingsOfUser, req.user._id];
 
     const myFeeds = await Post.find({ author: { $in: feedIds } })
+      .populate("author", "username display_name profile_url")
       .limit(req.query.limit)
       .exec();
 
@@ -51,7 +55,9 @@ exports.posts_get_one = [
   verifyAuth,
   validIdErrorHandler,
   asyncHandler(async (req, res, next) => {
-    const post = await Post.findById(req.params.id).exec();
+    const post = await Post.findById(req.params.id)
+      .populate("author", "username display_name profile_url")
+      .exec();
     if (post === null) {
       const err = new Error("post not found");
       err.status = 404;
@@ -80,10 +86,9 @@ exports.posts_post = [
   asyncHandler(async (req, res, next) => {
     const imgs = [];
     const urls = [];
-    if (req.files) {
+    if (req.files.length > 0) {
       //upload multiple images
-
-      req.files.forEach(async (file) => {
+      for (const file of req.files) {
         const result = await cloudinaryUtils.PostImageUpload(
           file,
           crypto.randomUUID(),
@@ -92,7 +97,7 @@ exports.posts_post = [
 
         imgs.push(result.public_id);
         urls.push(cloudinaryUtils.getImageUrl(result.public_id));
-      });
+      }
     }
     const post = new Post({
       author: req.user._id,
@@ -104,8 +109,13 @@ exports.posts_post = [
 
     await post.save();
 
+    const result = await post.populate(
+      "author",
+      "username display_name profile_url"
+    );
+
     res.json({
-      post: post,
+      post: result,
     });
   }),
 ];
@@ -137,16 +147,16 @@ exports.posts_put = [
 
     const imgs = [];
     const urls = [];
-    if (req.files) {
+    if (req.files.length > 0) {
       //delete old images
-      if (existPost.images) {
-        existPost.images.forEach(async (image) => {
+      if (existPost.images.length > 0) {
+        for (const image of existPost.images) {
           await cloudinaryUtils.ImageDelete(image);
-        });
+        }
       }
 
       //upload multiple images
-      req.files.forEach(async (file) => {
+      for (const file of req.files) {
         const result = await cloudinaryUtils.PostImageUpload(
           file,
           crypto.randomUUID(),
@@ -155,7 +165,7 @@ exports.posts_put = [
 
         imgs.push(result.public_id);
         urls.push(cloudinaryUtils.getImageUrl(result.public_id));
-      });
+      }
     }
 
     const post = {
@@ -171,7 +181,9 @@ exports.posts_put = [
 
     const updatedPost = await Post.findByIdAndUpdate(req.params.id, post, {
       new: true,
-    });
+    })
+      .populate("author", "username display_name profile_url")
+      .exec();
 
     res.json({
       updatedPost,
@@ -191,14 +203,16 @@ exports.posts_delete = [
     }
 
     //delete old images
-    if (existPost.images) {
-      existPost.images.forEach(async (image) => {
+    if (existPost.images.length > 0) {
+      for (const image of existPost.images) {
         await cloudinaryUtils.ImageDelete(image);
-      });
+      }
     }
 
     const [deletedPost, comments] = await Promise.all([
-      Post.findByIdAndDelete(req.params.id),
+      Post.findByIdAndDelete(req.params.id)
+        .populate("author", "username display_name profile_url")
+        .exec(),
       Comment.deleteMany({ post: req.params.id }).exec(),
     ]);
 
