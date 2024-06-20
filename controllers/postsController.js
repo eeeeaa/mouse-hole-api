@@ -86,17 +86,19 @@ exports.posts_post = [
   asyncHandler(async (req, res, next) => {
     const imgs = [];
     const urls = [];
-    if (req.files.length > 0) {
-      //upload multiple images
-      for (const file of req.files) {
-        const result = await cloudinaryUtils.PostImageUpload(
-          file,
-          crypto.randomUUID(),
-          true
-        );
+    if (req.files) {
+      if (req.files.length > 0) {
+        //upload multiple images
+        for (const file of req.files) {
+          const result = await cloudinaryUtils.PostImageUpload(
+            file,
+            crypto.randomUUID(),
+            true
+          );
 
-        imgs.push(result.public_id);
-        urls.push(cloudinaryUtils.getImageUrl(result.public_id));
+          imgs.push(result.public_id);
+          urls.push(cloudinaryUtils.getImageUrl(result.public_id, 500));
+        }
       }
     }
     const post = new Post({
@@ -147,24 +149,27 @@ exports.posts_put = [
 
     const imgs = [];
     const urls = [];
-    if (req.files.length > 0) {
-      //delete old images
-      if (existPost.images.length > 0) {
-        for (const image of existPost.images) {
-          await cloudinaryUtils.ImageDelete(image);
+    if (req.files) {
+      if (req.files.length > 0) {
+        //delete old images
+        if (existPost.images) {
+          if (existPost.images.length > 0) {
+            for (const image of existPost.images) {
+              await cloudinaryUtils.ImageDelete(image);
+            }
+          }
         }
-      }
+        //upload multiple images
+        for (const file of req.files) {
+          const result = await cloudinaryUtils.PostImageUpload(
+            file,
+            crypto.randomUUID(),
+            true
+          );
 
-      //upload multiple images
-      for (const file of req.files) {
-        const result = await cloudinaryUtils.PostImageUpload(
-          file,
-          crypto.randomUUID(),
-          true
-        );
-
-        imgs.push(result.public_id);
-        urls.push(cloudinaryUtils.getImageUrl(result.public_id));
+          imgs.push(result.public_id);
+          urls.push(cloudinaryUtils.getImageUrl(result.public_id, 500));
+        }
       }
     }
 
@@ -203,12 +208,13 @@ exports.posts_delete = [
     }
 
     //delete old images
-    if (existPost.images.length > 0) {
-      for (const image of existPost.images) {
-        await cloudinaryUtils.ImageDelete(image);
+    if (existPost.images) {
+      if (existPost.images.length > 0) {
+        for (const image of existPost.images) {
+          await cloudinaryUtils.ImageDelete(image);
+        }
       }
     }
-
     const [deletedPost, comments] = await Promise.all([
       Post.findByIdAndDelete(req.params.id)
         .populate("author", "username display_name profile_url")

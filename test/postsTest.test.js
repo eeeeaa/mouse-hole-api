@@ -64,7 +64,7 @@ describe("posts route test", () => {
         if (err) return done(err);
         expect(res.body.post.title).toBe("test title");
         expect(res.body.post.content).toBe("test content");
-        expect(res.body.post.author).toBe(userId);
+        expect(res.body.post.author._id).toBe(userId);
         expect(res.body.post.images.length).toBe(0);
         expect(res.body.post.like_count).toBe(0);
         postId = res.body.post._id;
@@ -105,7 +105,7 @@ describe("posts route test", () => {
         if (err) return done(err);
         expect(res.body.post.title).toBe("test title");
         expect(res.body.post.content).toBe("test content");
-        expect(res.body.post.author).toBe(userId);
+        expect(res.body.post.author._id).toBe(userId);
         expect(res.body.post.images.length).toBe(0);
         expect(res.body.post.like_count).toBe(0);
         return done();
@@ -126,7 +126,7 @@ describe("posts route test", () => {
         if (err) return done(err);
         expect(res.body.updatedPost.title).toBe("test title updated");
         expect(res.body.updatedPost.content).toBe("test content updated");
-        expect(res.body.updatedPost.author).toBe(userId);
+        expect(res.body.updatedPost.author._id).toBe(userId);
         expect(res.body.updatedPost.images.length).toBe(0);
         expect(res.body.updatedPost.like_count).toBe(5);
         return done();
@@ -142,7 +142,7 @@ describe("posts route test", () => {
         if (err) return done(err);
         expect(res.body.deletedPost.title).toBe("test title updated");
         expect(res.body.deletedPost.content).toBe("test content updated");
-        expect(res.body.deletedPost.author).toBe(userId);
+        expect(res.body.deletedPost.author._id).toBe(userId);
         expect(res.body.deletedPost.images.length).toBe(0);
         expect(res.body.deletedPost.like_count).toBe(5);
         return done();
