@@ -122,6 +122,57 @@ exports.posts_post = [
   }),
 ];
 
+exports.posts_like = [
+  verifyAuth,
+  asyncHandler(async (req, res, next) => {
+    const existPost = await Post.findById(req.params.id).exec();
+    if (existPost === null) {
+      const err = new Error("Post does not exist");
+      err.status = 404;
+      return next(err);
+    }
+
+    const post = {
+      like_count: existPost.like_count + 1,
+    };
+
+    const updatedPost = await Post.findByIdAndUpdate(req.params.id, post, {
+      new: true,
+    })
+      .populate("author", "username display_name profile_url")
+      .exec();
+
+    res.json({
+      updatedPost,
+    });
+  }),
+];
+exports.posts_dislike = [
+  verifyAuth,
+  asyncHandler(async (req, res, next) => {
+    const existPost = await Post.findById(req.params.id).exec();
+    if (existPost === null) {
+      const err = new Error("Post does not exist");
+      err.status = 404;
+      return next(err);
+    }
+
+    const post = {
+      like_count: existPost.like_count > 0 ? existPost.like_count - 1 : 0,
+    };
+
+    const updatedPost = await Post.findByIdAndUpdate(req.params.id, post, {
+      new: true,
+    })
+      .populate("author", "username display_name profile_url")
+      .exec();
+
+    res.json({
+      updatedPost,
+    });
+  }),
+];
+
 exports.posts_put = [
   verifyAuth,
   body("title")

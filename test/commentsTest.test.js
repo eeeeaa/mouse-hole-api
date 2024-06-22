@@ -114,6 +114,36 @@ describe("comment route test", () => {
       });
   });
 
+  test("like comment", (done) => {
+    request(app)
+      .put(`/${postId}/comments/${commentId}/like`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err);
+        expect(res.body.updatedComment.author).toBe(userId);
+        expect(res.body.updatedComment.post).toBe(postId);
+        expect(res.body.updatedComment.message).toBe("test message updated");
+        expect(res.body.updatedComment.like_count).toBe(6);
+        return done();
+      });
+  });
+
+  test("dislike comment", (done) => {
+    request(app)
+      .put(`/${postId}/comments/${commentId}/dislike`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err);
+        expect(res.body.updatedComment.author).toBe(userId);
+        expect(res.body.updatedComment.post).toBe(postId);
+        expect(res.body.updatedComment.message).toBe("test message updated");
+        expect(res.body.updatedComment.like_count).toBe(5);
+        return done();
+      });
+  });
+
   test("delete comment", (done) => {
     request(app)
       .delete(`/${postId}/comments/${commentId}`)

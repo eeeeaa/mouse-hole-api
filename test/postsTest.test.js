@@ -133,6 +133,38 @@ describe("posts route test", () => {
       });
   });
 
+  test("like post", (done) => {
+    request(app)
+      .put(`/${postId}/like`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err);
+        expect(res.body.updatedPost.title).toBe("test title updated");
+        expect(res.body.updatedPost.content).toBe("test content updated");
+        expect(res.body.updatedPost.author._id).toBe(userId);
+        expect(res.body.updatedPost.images.length).toBe(0);
+        expect(res.body.updatedPost.like_count).toBe(6);
+        return done();
+      });
+  });
+
+  test("dislike post", (done) => {
+    request(app)
+      .put(`/${postId}/dislike`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err);
+        expect(res.body.updatedPost.title).toBe("test title updated");
+        expect(res.body.updatedPost.content).toBe("test content updated");
+        expect(res.body.updatedPost.author._id).toBe(userId);
+        expect(res.body.updatedPost.images.length).toBe(0);
+        expect(res.body.updatedPost.like_count).toBe(5);
+        return done();
+      });
+  });
+
   test("delete post", (done) => {
     request(app)
       .delete(`/${postId}`)

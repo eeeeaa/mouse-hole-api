@@ -84,6 +84,65 @@ exports.comments_post = [
   }),
 ];
 
+exports.comments_like = [
+  verifyAuth,
+  asyncHandler(async (req, res, next) => {
+    const [existPost, existComment] = await Promise.all([
+      Post.findById(req.params.id).exec(),
+      Comment.findById(req.params.commentId).exec(),
+    ]);
+
+    if (existPost === null || existComment === null) {
+      const err = new Error("Post or comment does not exist");
+      err.status = 404;
+      return next(err);
+    }
+
+    const comment = {
+      like_count: existComment.like_count + 1,
+    };
+
+    const updatedComment = await Comment.findByIdAndUpdate(
+      req.params.commentId,
+      comment,
+      { new: true }
+    );
+
+    res.json({
+      updatedComment,
+    });
+  }),
+];
+exports.comments_dislike = [
+  verifyAuth,
+  asyncHandler(async (req, res, next) => {
+    const [existPost, existComment] = await Promise.all([
+      Post.findById(req.params.id).exec(),
+      Comment.findById(req.params.commentId).exec(),
+    ]);
+
+    if (existPost === null || existComment === null) {
+      const err = new Error("Post or comment does not exist");
+      err.status = 404;
+      return next(err);
+    }
+
+    const comment = {
+      like_count: existComment.like_count > 0 ? existComment.like_count - 1 : 0,
+    };
+
+    const updatedComment = await Comment.findByIdAndUpdate(
+      req.params.commentId,
+      comment,
+      { new: true }
+    );
+
+    res.json({
+      updatedComment,
+    });
+  }),
+];
+
 exports.comments_put = [
   verifyAuth,
   validIdErrorHandler,
