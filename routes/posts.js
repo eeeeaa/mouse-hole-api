@@ -11,8 +11,8 @@ router.get("/", post_controller.posts_get);
 router.get("/my-feed", post_controller.posts_my_feed_get);
 router.get("/:id", post_controller.posts_get_one);
 
-router.put("/:id/like", post_controller.posts_like);
-router.put("/:id/dislike", post_controller.posts_dislike);
+router.get("/:id/like", post_controller.posts_get_likes);
+router.post("/:id/like/toggle", post_controller.posts_like);
 
 router.post("/", post_controller.posts_post);
 router.put("/:id", post_controller.posts_put);

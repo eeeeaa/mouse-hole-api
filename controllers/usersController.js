@@ -10,6 +10,8 @@ const User = require("../models/user");
 const Comment = require("../models/comment");
 const Post = require("../models/post");
 const UserRelationship = require("../models/userRelationship");
+const PostRelationship = require("../models/postRelationship");
+const CommentRelationship = require("../models/commentRelationship");
 const cloudinaryUtils = require("../utils/cloudinaryUtils");
 
 const upload = require("../utils/multer");
@@ -123,7 +125,14 @@ exports.users_delete = [
       return next(err);
     }
 
-    const [deletedUser, comments, posts, relationships] = await Promise.all([
+    const [
+      deletedUser,
+      comments,
+      posts,
+      relationships,
+      postRelationships,
+      commentRelationships,
+    ] = await Promise.all([
       User.findByIdAndDelete(req.params.id),
       Comment.deleteMany({ author: req.params.id }).exec(),
       Post.deleteMany({ author: req.params.id }).exec(),
@@ -133,6 +142,8 @@ exports.users_delete = [
           { user_id_second: req.params.id },
         ],
       }).exec(),
+      PostRelationship.deleteMany({ user: req.params.id }).exec(),
+      CommentRelationship.deleteMany({ user: req.params.id }).exec(),
     ]);
 
     if (existUser.profile_public_id) {

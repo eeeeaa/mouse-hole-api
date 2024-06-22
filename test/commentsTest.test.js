@@ -61,7 +61,6 @@ describe("comment route test", () => {
         expect(res.body.comment.author).toBe(userId);
         expect(res.body.comment.post).toBe(postId);
         expect(res.body.comment.message).toBe("test message");
-        expect(res.body.comment.like_count).toBe(0);
         commentId = res.body.comment._id;
         return done();
       });
@@ -90,7 +89,6 @@ describe("comment route test", () => {
         expect(res.body.comment.author).toBe(userId);
         expect(res.body.comment.post).toBe(postId);
         expect(res.body.comment.message).toBe("test message");
-        expect(res.body.comment.like_count).toBe(0);
         return done();
       });
   });
@@ -101,7 +99,6 @@ describe("comment route test", () => {
       .set("Authorization", `Bearer ${token}`)
       .send({
         message: "test message updated",
-        like_count: 5,
       })
       .expect(200)
       .end((err, res) => {
@@ -109,37 +106,32 @@ describe("comment route test", () => {
         expect(res.body.updatedComment.author).toBe(userId);
         expect(res.body.updatedComment.post).toBe(postId);
         expect(res.body.updatedComment.message).toBe("test message updated");
-        expect(res.body.updatedComment.like_count).toBe(5);
         return done();
       });
   });
 
   test("like comment", (done) => {
     request(app)
-      .put(`/${postId}/comments/${commentId}/like`)
+      .post(`/${postId}/comments/${commentId}/like/toggle`)
       .set("Authorization", `Bearer ${token}`)
       .expect(200)
       .end((err, res) => {
         if (err) return done(err);
-        expect(res.body.updatedComment.author).toBe(userId);
-        expect(res.body.updatedComment.post).toBe(postId);
-        expect(res.body.updatedComment.message).toBe("test message updated");
-        expect(res.body.updatedComment.like_count).toBe(6);
+        expect(res.body.like_count).toBe(1);
+        expect(res.body.isUserLiked).toBe(true);
         return done();
       });
   });
 
   test("dislike comment", (done) => {
     request(app)
-      .put(`/${postId}/comments/${commentId}/dislike`)
+      .post(`/${postId}/comments/${commentId}/like/toggle`)
       .set("Authorization", `Bearer ${token}`)
       .expect(200)
       .end((err, res) => {
         if (err) return done(err);
-        expect(res.body.updatedComment.author).toBe(userId);
-        expect(res.body.updatedComment.post).toBe(postId);
-        expect(res.body.updatedComment.message).toBe("test message updated");
-        expect(res.body.updatedComment.like_count).toBe(5);
+        expect(res.body.like_count).toBe(0);
+        expect(res.body.isUserLiked).toBe(false);
         return done();
       });
   });
@@ -154,7 +146,6 @@ describe("comment route test", () => {
         expect(res.body.deletedComment.author).toBe(userId);
         expect(res.body.deletedComment.post).toBe(postId);
         expect(res.body.deletedComment.message).toBe("test message updated");
-        expect(res.body.deletedComment.like_count).toBe(5);
         return done();
       });
   });

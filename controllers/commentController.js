@@ -8,6 +8,7 @@ const {
 const { verifyAuth } = require("../handler/authHandler");
 
 const User = require("../models/user");
+const CommentRelationship = require("../models/commentRelationship");
 const Comment = require("../models/comment");
 const Post = require("../models/post");
 
@@ -83,8 +84,7 @@ exports.comments_post = [
     });
   }),
 ];
-
-exports.comments_like = [
+exports.comments_get_likes = [
   verifyAuth,
   asyncHandler(async (req, res, next) => {
     const [existPost, existComment] = await Promise.all([
@@ -98,27 +98,36 @@ exports.comments_like = [
       return next(err);
     }
 
-    const comment = {
-      like_count: existComment.like_count + 1,
-    };
-
-    const updatedComment = await Comment.findByIdAndUpdate(
-      req.params.commentId,
-      comment,
-      { new: true }
-    );
+    const relationships = await CommentRelationship.find({
+      post: req.params.id,
+      comment: req.params.commentId,
+      relation_type: "like",
+    });
+    let isUserLiked = false;
+    if (relationships.length > 0) {
+      for (const relationship of relationships) {
+        if (relationship.user === req.user._id) isUserLiked = true;
+      }
+    }
 
     res.json({
-      updatedComment,
+      like_count: relationships.length,
+      isUserLiked: isUserLiked,
     });
   }),
 ];
-exports.comments_dislike = [
+exports.comments_like = [
   verifyAuth,
   asyncHandler(async (req, res, next) => {
-    const [existPost, existComment] = await Promise.all([
+    const [existPost, existComment, existRelationship] = await Promise.all([
       Post.findById(req.params.id).exec(),
       Comment.findById(req.params.commentId).exec(),
+      CommentRelationship.findOne({
+        user: req.user._id,
+        post: req.params.id,
+        comment: req.params.commentId,
+        relation_type: "like",
+      }).exec(),
     ]);
 
     if (existPost === null || existComment === null) {
@@ -126,19 +135,38 @@ exports.comments_dislike = [
       err.status = 404;
       return next(err);
     }
+    let isUserLiked = false;
+    if (existRelationship) {
+      //remove like
+      await CommentRelationship.deleteOne({
+        user: req.user._id,
+        post: req.params.id,
+        comment: req.params.commentId,
+        relation_type: "like",
+      }).exec();
+      isUserLiked = false;
+    } else {
+      //add like
+      const relationship = new CommentRelationship({
+        user: req.user._id,
+        post: req.params.id,
+        comment: req.params.commentId,
+        relation_type: "like",
+      });
 
-    const comment = {
-      like_count: existComment.like_count > 0 ? existComment.like_count - 1 : 0,
-    };
+      await relationship.save();
+      isUserLiked = true;
+    }
 
-    const updatedComment = await Comment.findByIdAndUpdate(
-      req.params.commentId,
-      comment,
-      { new: true }
-    );
+    const relationships = await CommentRelationship.find({
+      post: req.params.id,
+      comment: req.params.commentId,
+      relation_type: "like",
+    }).exec();
 
     res.json({
-      updatedComment,
+      like_count: relationships.length,
+      isUserLiked: isUserLiked,
     });
   }),
 ];
@@ -153,7 +181,6 @@ exports.comments_put = [
     .isLength({ min: 1 })
     .withMessage("message must not be empty")
     .escape(),
-  body("like_count").optional({ values: "falsy" }).isNumeric({ min: 0 }),
   validationErrorHandler,
   asyncHandler(async (req, res, next) => {
     const [existPost, existComment] = await Promise.all([
@@ -171,7 +198,6 @@ exports.comments_put = [
       _id: req.params.commentId,
       message: req.body.message,
       updated_at: Date.now(),
-      like_count: req.body.like_count,
     };
 
     const updatedComment = await Comment.findByIdAndUpdate(
@@ -202,9 +228,10 @@ exports.comments_delete = [
       return next(err);
     }
 
-    const deletedComment = await Comment.findByIdAndDelete(
-      req.params.commentId
-    );
+    const [deletedComment, relationships] = await Promise.all([
+      Comment.findByIdAndDelete(req.params.commentId).exec(),
+      CommentRelationship.deleteMany({ comment: req.params.commentId }).exec(),
+    ]);
 
     res.json({
       deletedComment,

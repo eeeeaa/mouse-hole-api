@@ -7,7 +7,6 @@ const PostSchema = new Schema({
   content: { type: String },
   images: [{ type: String }],
   image_urls: [{ type: String }],
-  like_count: { type: Number, default: 0, min: 0 },
   created_at: { type: Date, default: Date.now },
   updated_at: { type: Date, default: Date.now },
 });

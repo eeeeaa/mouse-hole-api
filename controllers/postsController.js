@@ -7,6 +7,8 @@ const {
 const { verifyAuth } = require("../handler/authHandler");
 
 const User = require("../models/user");
+const PostRelationship = require("../models/postRelationship");
+const CommentRelationship = require("../models/commentRelationship");
 const Comment = require("../models/comment");
 const Post = require("../models/post");
 
@@ -122,7 +124,7 @@ exports.posts_post = [
   }),
 ];
 
-exports.posts_like = [
+exports.posts_get_likes = [
   verifyAuth,
   asyncHandler(async (req, res, next) => {
     const existPost = await Post.findById(req.params.id).exec();
@@ -131,50 +133,79 @@ exports.posts_like = [
       err.status = 404;
       return next(err);
     }
-
-    const post = {
-      like_count: existPost.like_count + 1,
-    };
-
-    const updatedPost = await Post.findByIdAndUpdate(req.params.id, post, {
-      new: true,
-    })
-      .populate("author", "username display_name profile_url")
-      .exec();
+    const relationships = await PostRelationship.find({
+      post: req.params.id,
+      relation_type: "like",
+    }).exec();
+    let isUserLiked = false;
+    if (relationships.length > 0) {
+      for (const relationship of relationships) {
+        if (relationship.user === req.user._id) isUserLiked = true;
+      }
+    }
 
     res.json({
-      updatedPost,
+      like_count: relationships.length,
+      isUserLiked: isUserLiked,
     });
   }),
 ];
-exports.posts_dislike = [
+
+exports.posts_like = [
   verifyAuth,
   asyncHandler(async (req, res, next) => {
-    const existPost = await Post.findById(req.params.id).exec();
+    const [existPost, existRelationship] = await Promise.all([
+      Post.findById(req.params.id).exec(),
+      PostRelationship.findOne({
+        user: req.user._id,
+        post: req.params.id,
+        relation_type: "like",
+      }).exec(),
+    ]);
+
     if (existPost === null) {
       const err = new Error("Post does not exist");
       err.status = 404;
       return next(err);
     }
 
-    const post = {
-      like_count: existPost.like_count > 0 ? existPost.like_count - 1 : 0,
-    };
+    let isUserLiked = false;
 
-    const updatedPost = await Post.findByIdAndUpdate(req.params.id, post, {
-      new: true,
-    })
-      .populate("author", "username display_name profile_url")
-      .exec();
+    if (existRelationship) {
+      //TODO user already like -> remove like
+      await PostRelationship.deleteOne({
+        user: req.user._id,
+        post: req.params.id,
+        relation_type: "like",
+      }).exec();
+
+      isUserLiked = false;
+    } else {
+      //TODO user have not like -> add like
+      const relationship = new PostRelationship({
+        user: req.user._id,
+        post: req.params.id,
+        relation_type: "like",
+      });
+      await relationship.save();
+      isUserLiked = true;
+    }
+
+    const relationships = await PostRelationship.find({
+      post: req.params.id,
+      relation_type: "like",
+    }).exec();
 
     res.json({
-      updatedPost,
+      like_count: relationships.length,
+      isUserLiked: isUserLiked,
     });
   }),
 ];
 
 exports.posts_put = [
   verifyAuth,
+  upload.array("image", 5),
   body("title")
     .optional({ values: "falsy" })
     .trim()
@@ -187,9 +218,7 @@ exports.posts_put = [
     .isLength({ min: 1 })
     .withMessage("post content must not be empty")
     .escape(),
-  body("like_count").optional({ values: "falsy" }).isNumeric({ min: 0 }),
   validationErrorHandler,
-  upload.array("image", 5),
   asyncHandler(async (req, res, next) => {
     const existPost = await Post.findById(req.params.id).exec();
     if (existPost === null) {
@@ -232,7 +261,6 @@ exports.posts_put = [
       images: imgs,
       urls: urls,
       updated_at: Date.now(),
-      like_count: req.body.like_count,
     };
 
     const updatedPost = await Post.findByIdAndUpdate(req.params.id, post, {
@@ -266,12 +294,15 @@ exports.posts_delete = [
         }
       }
     }
-    const [deletedPost, comments] = await Promise.all([
-      Post.findByIdAndDelete(req.params.id)
-        .populate("author", "username display_name profile_url")
-        .exec(),
-      Comment.deleteMany({ post: req.params.id }).exec(),
-    ]);
+    const [deletedPost, comments, relations, commentRelationships] =
+      await Promise.all([
+        Post.findByIdAndDelete(req.params.id)
+          .populate("author", "username display_name profile_url")
+          .exec(),
+        Comment.deleteMany({ post: req.params.id }).exec(),
+        PostRelationship.deleteMany({ post: req.params.id }).exec(),
+        CommentRelationship.deleteMany({ post: req.params.id }).exec(),
+      ]);
 
     res.json({
       deletedPost,
