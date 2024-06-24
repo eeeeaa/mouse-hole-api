@@ -145,7 +145,6 @@ exports.posts_get_likes = [
         }
       }
     }
-    console.log(isUserLiked);
     res.json({
       like_count: relationships.length,
       isUserLiked: isUserLiked,
