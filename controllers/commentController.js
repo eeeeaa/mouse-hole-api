@@ -106,7 +106,7 @@ exports.comments_get_likes = [
     let isUserLiked = false;
     if (relationships.length > 0) {
       for (const relationship of relationships) {
-        if (relationship.user === req.user._id) isUserLiked = true;
+        if (relationship.user.toString() === req.user._id) isUserLiked = true;
       }
     }
 
