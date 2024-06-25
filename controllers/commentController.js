@@ -18,7 +18,10 @@ exports.comments_get = [
   asyncHandler(async (req, res, next) => {
     const [existPost, allCommentsByPost] = await Promise.all([
       Post.findById(req.params.id).exec(),
-      Comment.find({ post: req.params.id }).limit(req.query.limit).exec(),
+      Comment.find({ post: req.params.id })
+        .populate("author", "username display_name profile_url")
+        .limit(req.query.limit)
+        .exec(),
     ]);
     if (existPost === null) {
       const err = new Error("Post does not exist");
@@ -39,7 +42,9 @@ exports.comments_get_one = [
   asyncHandler(async (req, res, next) => {
     const [existPost, comment] = await Promise.all([
       Post.findById(req.params.id).exec(),
-      Comment.findById(req.params.commentId).exec(),
+      Comment.findById(req.params.commentId)
+        .populate("author", "username display_name profile_url")
+        .exec(),
     ]);
 
     if (existPost === null || comment === null) {
@@ -79,8 +84,13 @@ exports.comments_post = [
 
     await comment.save();
 
+    const result = await comment.populate(
+      "author",
+      "username display_name profile_url"
+    );
+
     res.json({
-      comment,
+      comment: result,
     });
   }),
 ];
@@ -204,7 +214,9 @@ exports.comments_put = [
       req.params.commentId,
       comment,
       { new: true }
-    );
+    )
+      .populate("author", "username display_name profile_url")
+      .exec();
 
     res.json({
       updatedComment,
@@ -229,7 +241,9 @@ exports.comments_delete = [
     }
 
     const [deletedComment, relationships] = await Promise.all([
-      Comment.findByIdAndDelete(req.params.commentId).exec(),
+      Comment.findByIdAndDelete(req.params.commentId)
+        .populate("author", "username display_name profile_url")
+        .exec(),
       CommentRelationship.deleteMany({ comment: req.params.commentId }).exec(),
     ]);
 
