@@ -9,6 +9,8 @@ router.use("/:id/comments", commentRouter);
 
 router.get("/", post_controller.posts_get);
 router.get("/my-feed", post_controller.posts_my_feed_get);
+router.post("/user-posts", post_controller.posts_user_post);
+
 router.get("/:id", post_controller.posts_get_one);
 
 router.get("/:id/like", post_controller.posts_get_likes);

@@ -17,6 +17,8 @@ const cloudinaryUtils = require("../utils/cloudinaryUtils");
 
 const { fetchFollowing } = require("./userRelationController");
 
+const mongoose = require("mongoose");
+
 exports.posts_get = [
   verifyAuth,
   asyncHandler(async (req, res, next) => {
@@ -49,6 +51,36 @@ exports.posts_my_feed_get = [
 
     res.json({
       posts: myFeeds,
+    });
+  }),
+];
+
+exports.posts_user_post = [
+  verifyAuth,
+  body("user_id")
+    .isLength({ min: 1 })
+    .custom((input) => {
+      return mongoose.Types.ObjectId.isValid(input);
+    })
+    .withMessage("invalid id")
+    .escape(),
+  validationErrorHandler,
+  asyncHandler(async (req, res, next) => {
+    const existUser = await User.findById(req.body.user_id).exec();
+
+    if (existUser === null) {
+      const err = new Error("user not found");
+      err.status = 404;
+      return next(err);
+    }
+
+    const posts = await Post.find({ author: req.body.user_id })
+      .populate("author", "username display_name profile_url")
+      .limit(req.query.limit)
+      .exec();
+
+    res.json({
+      posts: posts,
     });
   }),
 ];

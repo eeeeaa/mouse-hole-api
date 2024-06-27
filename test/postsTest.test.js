@@ -42,8 +42,8 @@ describe("posts route test", () => {
       .set("Authorization", `Bearer ${loginResponse.body.token}`);
 
     token = loginResponse.body.token;
-    userId = userAResponse.body.user._id;
-    userB = userBResponse.body.user._id;
+    userId = userAResponse.body.user._id.toString();
+    userB = userBResponse.body.user._id.toString();
   });
 
   afterAll(() => {
@@ -87,6 +87,21 @@ describe("posts route test", () => {
     request(app)
       .get("/my-feed")
       .set("Authorization", `Bearer ${token}`)
+      .expect(200)
+      .end((err, res) => {
+        if (err) return done(err);
+        expect(res.body.posts.length).toBe(1);
+        return done();
+      });
+  });
+
+  test("get user's posts", (done) => {
+    request(app)
+      .post("/user-posts")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        user_id: userId,
+      })
       .expect(200)
       .end((err, res) => {
         if (err) return done(err);

@@ -58,7 +58,7 @@ describe("comment route test", () => {
       .expect(200)
       .end((err, res) => {
         if (err) return done(err);
-        expect(res.body.comment.author).toBe(userId);
+        expect(res.body.comment.author._id).toBe(userId);
         expect(res.body.comment.post).toBe(postId);
         expect(res.body.comment.message).toBe("test message");
         commentId = res.body.comment._id;
@@ -74,7 +74,7 @@ describe("comment route test", () => {
       .end((err, res) => {
         if (err) return done(err);
         expect(res.body.comments.length).toBe(1);
-        expect(res.body.comments[0].author).toBe(userId);
+        expect(res.body.comments[0].author._id).toBe(userId);
         expect(res.body.comments[0].post).toBe(postId);
         return done();
       });
@@ -86,7 +86,7 @@ describe("comment route test", () => {
       .expect(200)
       .end((err, res) => {
         if (err) return done(err);
-        expect(res.body.comment.author).toBe(userId);
+        expect(res.body.comment.author._id).toBe(userId);
         expect(res.body.comment.post).toBe(postId);
         expect(res.body.comment.message).toBe("test message");
         return done();
@@ -103,7 +103,7 @@ describe("comment route test", () => {
       .expect(200)
       .end((err, res) => {
         if (err) return done(err);
-        expect(res.body.updatedComment.author).toBe(userId);
+        expect(res.body.updatedComment.author._id).toBe(userId);
         expect(res.body.updatedComment.post).toBe(postId);
         expect(res.body.updatedComment.message).toBe("test message updated");
         return done();
@@ -143,7 +143,7 @@ describe("comment route test", () => {
       .expect(200)
       .end((err, res) => {
         if (err) return done(err);
-        expect(res.body.deletedComment.author).toBe(userId);
+        expect(res.body.deletedComment.author._id).toBe(userId);
         expect(res.body.deletedComment.post).toBe(postId);
         expect(res.body.deletedComment.message).toBe("test message updated");
         return done();
