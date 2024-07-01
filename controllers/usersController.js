@@ -16,15 +16,30 @@ const cloudinaryUtils = require("../utils/cloudinaryUtils");
 
 const upload = require("../utils/multer");
 
+const defaultPageLimit = 10;
+const defaultPage = 0;
+
 exports.users_get = [
   verifyAuth,
   asyncHandler(async (req, res, next) => {
-    const allUsers = await User.find({}, "username display_name profile_url")
-      .sort({ username: 1 })
-      .limit(req.query.limit)
-      .exec();
+    const pageOptions = {
+      page: parseInt(req.query.page, 10) || defaultPage,
+      limit: parseInt(req.query.limit, 10) || defaultPageLimit,
+    };
+
+    const [count, allUsers] = await Promise.all([
+      User.countDocuments().exec(),
+      User.find({}, "username display_name profile_url")
+        .sort({ username: 1 })
+        .skip(pageOptions.page * pageOptions.limit)
+        .limit(pageOptions.limit)
+        .exec(),
+    ]);
+
     res.json({
       users: allUsers,
+      totalPages: Math.ceil(count / pageOptions.limit),
+      currentPage: pageOptions.page,
     });
   }),
 ];

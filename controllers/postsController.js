@@ -19,16 +19,31 @@ const { fetchFollowing } = require("./userRelationController");
 
 const mongoose = require("mongoose");
 
+const defaultPageLimit = 10;
+const defaultPage = 0;
+
 exports.posts_get = [
   verifyAuth,
   asyncHandler(async (req, res, next) => {
-    const allPosts = await Post.find()
-      .populate("author", "username display_name profile_url")
-      .limit(req.query.limit)
-      .exec();
+    const pageOptions = {
+      page: parseInt(req.query.page, 10) || defaultPage,
+      limit: parseInt(req.query.limit, 10) || defaultPageLimit,
+    };
+
+    const [count, allPosts] = await Promise.all([
+      Post.countDocuments().exec(),
+      Post.find()
+        .populate("author", "username display_name profile_url")
+        .sort({ updated_at: 1 })
+        .skip(pageOptions.page * pageOptions.limit)
+        .limit(pageOptions.limit)
+        .exec(),
+    ]);
 
     res.json({
       posts: allPosts,
+      totalPages: Math.ceil(count / pageOptions.limit),
+      currentPage: pageOptions.page,
     });
   }),
 ];
@@ -36,21 +51,29 @@ exports.posts_get = [
 exports.posts_my_feed_get = [
   verifyAuth,
   asyncHandler(async (req, res, next) => {
-    const allFollowingsOfUser = await fetchFollowing(
-      req.user._id,
-      "Follow",
-      true
-    );
+    const { allFollowingsOfUser, totalPages, currentPage } =
+      await fetchFollowing(req.user._id, "Follow", true, 0, 0);
+    const pageOptions = {
+      page: parseInt(req.query.page, 10) || defaultPage,
+      limit: parseInt(req.query.limit, 10) || defaultPageLimit,
+    };
 
     const feedIds = [...allFollowingsOfUser, req.user._id];
 
-    const myFeeds = await Post.find({ author: { $in: feedIds } })
-      .populate("author", "username display_name profile_url")
-      .limit(req.query.limit)
-      .exec();
+    const [count, myFeeds] = await Promise.all([
+      Post.countDocuments({ author: { $in: feedIds } }).exec(),
+      Post.find({ author: { $in: feedIds } })
+        .populate("author", "username display_name profile_url")
+        .sort({ updated_at: 1 })
+        .skip(pageOptions.page * pageOptions.limit)
+        .limit(pageOptions.limit)
+        .exec(),
+    ]);
 
     res.json({
       posts: myFeeds,
+      totalPages: Math.ceil(count / pageOptions.limit),
+      currentPage: pageOptions.page,
     });
   }),
 ];
@@ -74,13 +97,24 @@ exports.posts_user_post = [
       return next(err);
     }
 
-    const posts = await Post.find({ author: req.body.user_id })
-      .populate("author", "username display_name profile_url")
-      .limit(req.query.limit)
-      .exec();
+    const pageOptions = {
+      page: parseInt(req.query.page, 10) || defaultPage,
+      limit: parseInt(req.query.limit, 10) || defaultPageLimit,
+    };
+
+    const [count, posts] = await Promise.all([
+      Post.countDocuments({ author: req.body.user_id }).exec(),
+      Post.find({ author: req.body.user_id })
+        .populate("author", "username display_name profile_url")
+        .sort({ updated_at: 1 })
+        .skip(pageOptions.page * pageOptions.limit)
+        .limit(pageOptions.limit),
+    ]);
 
     res.json({
       posts: posts,
+      totalPages: Math.ceil(count / pageOptions.limit),
+      currentPage: pageOptions.page,
     });
   }),
 ];

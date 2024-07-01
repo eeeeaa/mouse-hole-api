@@ -12,16 +12,26 @@ const CommentRelationship = require("../models/commentRelationship");
 const Comment = require("../models/comment");
 const Post = require("../models/post");
 
+const defaultPageLimit = 10;
+const defaultPage = 0;
+
 exports.comments_get = [
   verifyAuth,
   validIdErrorHandler,
   asyncHandler(async (req, res, next) => {
-    const [existPost, allCommentsByPost] = await Promise.all([
+    const pageOptions = {
+      page: parseInt(req.query.page, 10) || defaultPage,
+      limit: parseInt(req.query.limit, 10) || defaultPageLimit,
+    };
+    const [existPost, allCommentsByPost, count] = await Promise.all([
       Post.findById(req.params.id).exec(),
       Comment.find({ post: req.params.id })
         .populate("author", "username display_name profile_url")
-        .limit(req.query.limit)
+        .sort({ updated_at: 1 })
+        .skip(pageOptions.page * pageOptions.limit)
+        .limit(pageOptions.limit)
         .exec(),
+      Comment.countDocuments({ post: req.params.id }).exec(),
     ]);
     if (existPost === null) {
       const err = new Error("Post does not exist");
@@ -31,6 +41,8 @@ exports.comments_get = [
 
     res.json({
       comments: allCommentsByPost,
+      totalPages: Math.ceil(count / pageOptions.limit),
+      currentPage: pageOptions.page,
     });
   }),
 ];

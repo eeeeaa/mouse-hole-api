@@ -65,6 +65,8 @@ describe("users route test", () => {
       .end((err, res) => {
         if (err) return done(err);
         expect(res.body.users.length).toBe(2);
+        expect(res.body.totalPages).toBe(1);
+        expect(res.body.currentPage).toBe(0);
         return done();
       });
   });
@@ -151,6 +153,8 @@ describe("user relationship test", () => {
       .end((err, res) => {
         if (err) return done(err);
         expect(res.body.users.length).toBe(0);
+        expect(res.body.totalPages).toBe(0);
+        expect(res.body.currentPage).toBe(0);
         return done();
       });
   });
@@ -163,6 +167,8 @@ describe("user relationship test", () => {
       .end((err, res) => {
         if (err) return done(err);
         expect(res.body.users.length).toBe(1);
+        expect(res.body.totalPages).toBe(1);
+        expect(res.body.currentPage).toBe(0);
         return done();
       });
   });
@@ -188,6 +194,8 @@ describe("user relationship test", () => {
       .end((err, res) => {
         if (err) return done(err);
         expect(res.body.users.length).toBe(1);
+        expect(res.body.totalPages).toBe(1);
+        expect(res.body.currentPage).toBe(0);
         return done();
       });
   });
@@ -200,6 +208,8 @@ describe("user relationship test", () => {
       .end((err, res) => {
         if (err) return done(err);
         expect(res.body.users.length).toBe(0);
+        expect(res.body.totalPages).toBe(0);
+        expect(res.body.currentPage).toBe(0);
         return done();
       });
   });

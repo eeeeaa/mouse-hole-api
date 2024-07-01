@@ -76,6 +76,8 @@ describe("comment route test", () => {
         expect(res.body.comments.length).toBe(1);
         expect(res.body.comments[0].author._id).toBe(userId);
         expect(res.body.comments[0].post).toBe(postId);
+        expect(res.body.totalPages).toBe(1);
+        expect(res.body.currentPage).toBe(0);
         return done();
       });
   });

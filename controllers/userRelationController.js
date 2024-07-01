@@ -10,23 +10,50 @@ const mongoose = require("mongoose");
 const User = require("../models/user");
 const UserRelationship = require("../models/userRelationship");
 
-async function fetchFollowers(user, relationType) {
-  const allFollowersOfUser = await UserRelationship.find(
-    {
+const defaultPageLimit = 10;
+const defaultPage = 0;
+
+async function fetchFollowers(user, relationType, page = 0, limit = 10) {
+  const [count, allFollowersOfUser] = await Promise.all([
+    UserRelationship.countDocuments({
       user_id_second: user,
       relation_type: relationType,
-    },
-    "user_id_first"
-  )
-    .populate("user_id_first", "username display_name profile_url")
-    .exec();
-  return allFollowersOfUser.map((relation) => {
-    return relation.user_id_first;
-  });
+    }).exec(),
+    UserRelationship.find(
+      {
+        user_id_second: user,
+        relation_type: relationType,
+      },
+      "user_id_first"
+    )
+      .populate("user_id_first", "username display_name profile_url")
+      .skip(page * limit)
+      .limit(limit)
+      .exec(),
+  ]);
+
+  return {
+    allFollowersOfUser: allFollowersOfUser.map((relation) => {
+      return relation.user_id_first;
+    }),
+    totalPages: Math.ceil(count / limit),
+    currentPage: page,
+  };
 }
 
-exports.fetchFollowing = async (user, relationType, onlyId = false) => {
+exports.fetchFollowing = async (
+  user,
+  relationType,
+  onlyId = false,
+  page = 0,
+  limit = 10
+) => {
   let allFollowingsOfUser = [];
+  const count = await UserRelationship.countDocuments({
+    user_id_first: user,
+    relation_type: relationType,
+  }).exec();
+
   if (onlyId) {
     allFollowingsOfUser = await UserRelationship.find(
       {
@@ -34,7 +61,10 @@ exports.fetchFollowing = async (user, relationType, onlyId = false) => {
         relation_type: relationType,
       },
       "user_id_second"
-    ).exec();
+    )
+      .skip(page * limit)
+      .limit(limit)
+      .exec();
   } else {
     allFollowingsOfUser = await UserRelationship.find(
       {
@@ -44,12 +74,18 @@ exports.fetchFollowing = async (user, relationType, onlyId = false) => {
       "user_id_second"
     )
       .populate("user_id_second", "username display_name profile_url")
+      .skip(page * limit)
+      .limit(limit)
       .exec();
   }
 
-  return allFollowingsOfUser.map((relation) => {
-    return relation.user_id_second;
-  });
+  return {
+    allFollowingsOfUser: allFollowingsOfUser.map((relation) => {
+      return relation.user_id_second;
+    }),
+    totalPages: Math.ceil(count / limit),
+    currentPage: page,
+  };
 };
 
 //---logged in user---
@@ -57,11 +93,23 @@ exports.fetchFollowing = async (user, relationType, onlyId = false) => {
 exports.get_my_followers = [
   verifyAuth,
   asyncHandler(async (req, res, next) => {
+    const pageOptions = {
+      page: parseInt(req.query.page, 10) || defaultPage,
+      limit: parseInt(req.query.limit, 10) || defaultPageLimit,
+    };
     //get all users that follows this user
-    const allFollowersOfUser = await fetchFollowers(req.user._id, "Follow");
+    const { allFollowersOfUser, totalPages, currentPage } =
+      await fetchFollowers(
+        req.user._id,
+        "Follow",
+        pageOptions.page,
+        pageOptions.limit
+      );
 
     res.json({
       users: allFollowersOfUser,
+      totalPages: totalPages,
+      currentPage: currentPage,
     });
   }),
 ];
@@ -69,14 +117,24 @@ exports.get_my_followers = [
 exports.get_my_followings = [
   verifyAuth,
   asyncHandler(async (req, res, next) => {
+    const pageOptions = {
+      page: parseInt(req.query.page, 10) || defaultPage,
+      limit: parseInt(req.query.limit, 10) || defaultPageLimit,
+    };
     //get all users that this user is following
-    const allFollowingsOfUser = await this.fetchFollowing(
-      req.user._id,
-      "Follow"
-    );
+    const { allFollowingsOfUser, totalPages, currentPage } =
+      await this.fetchFollowing(
+        req.user._id,
+        "Follow",
+        false,
+        pageOptions.page,
+        pageOptions.limit
+      );
 
     res.json({
       users: allFollowingsOfUser,
+      totalPages: totalPages,
+      currentPage: currentPage,
     });
   }),
 ];
@@ -166,11 +224,23 @@ exports.get_user_followers = [
   verifyAuth,
   validIdErrorHandler,
   asyncHandler(async (req, res, next) => {
+    const pageOptions = {
+      page: parseInt(req.query.page, 10) || defaultPage,
+      limit: parseInt(req.query.limit, 10) || defaultPageLimit,
+    };
     //get all users that follows this user
-    const allFollowersOfUser = await fetchFollowers(req.params.id, "Follow");
+    const { allFollowersOfUser, totalPages, currentPage } =
+      await fetchFollowers(
+        req.params.id,
+        "Follow",
+        pageOptions.page,
+        pageOptions.limit
+      );
 
     res.json({
       users: allFollowersOfUser,
+      totalPages: totalPages,
+      currentPage: currentPage,
     });
   }),
 ];
@@ -179,14 +249,24 @@ exports.get_user_followings = [
   verifyAuth,
   validIdErrorHandler,
   asyncHandler(async (req, res, next) => {
+    const pageOptions = {
+      page: parseInt(req.query.page, 10) || defaultPage,
+      limit: parseInt(req.query.limit, 10) || defaultPageLimit,
+    };
     //get all users that this user is following
-    const allFollowingsOfUser = await this.fetchFollowing(
-      req.params.id,
-      "Follow"
-    );
+    const { allFollowingsOfUser, totalPages, currentPage } =
+      await this.fetchFollowing(
+        req.params.id,
+        "Follow",
+        false,
+        pageOptions.page,
+        pageOptions.limit
+      );
 
     res.json({
       users: allFollowingsOfUser,
+      totalPages: totalPages,
+      currentPage: currentPage,
     });
   }),
 ];

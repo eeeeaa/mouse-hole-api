@@ -79,6 +79,8 @@ describe("posts route test", () => {
       .end((err, res) => {
         if (err) return done(err);
         expect(res.body.posts.length).toBe(1);
+        expect(res.body.totalPages).toBe(1);
+        expect(res.body.currentPage).toBe(0);
         return done();
       });
   });
@@ -91,6 +93,8 @@ describe("posts route test", () => {
       .end((err, res) => {
         if (err) return done(err);
         expect(res.body.posts.length).toBe(1);
+        expect(res.body.totalPages).toBe(1);
+        expect(res.body.currentPage).toBe(0);
         return done();
       });
   });
@@ -106,6 +110,8 @@ describe("posts route test", () => {
       .end((err, res) => {
         if (err) return done(err);
         expect(res.body.posts.length).toBe(1);
+        expect(res.body.totalPages).toBe(1);
+        expect(res.body.currentPage).toBe(0);
         return done();
       });
   });
